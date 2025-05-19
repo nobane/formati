@@ -1,0 +1,21 @@
+[package]
+name = "formati"
+version = "0.1.0"
+edition = "2021"
+authors = ["nobane"]
+description = "Enhanced formatting macros with dotted notation and expression interpolation"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/nobane/formati"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn   = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1.0.95"
+
+[dev-dependencies]
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
