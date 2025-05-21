@@ -2,20 +2,43 @@
 
 > **Enhanced Rust formatting macros with dotted notation and expression interpolation**
 
-`formati` is a collection of procedural macros that extend Rust's standard formatting facilities in two key ways:
+[![Crates.io][crates-badge]][crates-url]
+[![MIT licensed][mit-badge]][mit-url]
 
-- Automatic handling of dotted notation for struct fields, tuple elements, and method calls
-- Deduplication of identical expressions that appear multiple times in the format string
+[crates-badge]: https://img.shields.io/crates/v/formati.svg
+[crates-url]: https://crates.io/crates/formati
+[mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[mit-url]: https://github.com/nobane/formati/blob/master/LICENSE
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+`formati` is a collection of procedural macros that extend Rust's standard formatting facilities to handle dotted notation:
+
+```rs
+formati::format!("User ID: {user.id}  Name: {user.display_name()}");
+```
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Basic Formatting](#basic-formatting)
+  - [Format Specifiers](#format-specifiers)
+  - [`print!` / `println!`](#print--println)
+- [Integration Wrappers](#integration-wrappers)
+  - [Anyhow](#anyhow-anyhow-bail)
+  - [Log](#log)
+  - [Tracing](#tracing)
+- [How It Works](#how-it-works)
+- [Tests](#tests)
+- [License](#license)
+
 
 ## Features
 
-- **Dotted notation**: Access struct fields and tuple elements with natural dot notation
-- **Expression deduplication**: Automatically prevents repeated evaluation of the same expressions
-- **Full format specifier support**: Works with all standard format specifiers (`{:?}`, `{:.2}`, etc.)
-- **Tracing integration**: Enhanced versions of common tracing macros
-- **Standard library wrappers**: Drop-in replacements for `print!` and `println!`
+- **Dotted notation**: Access fields and elements with natural dot notation
+- **Expression evaluation**: Run arbitrary expressions
+- **Argument deduplication**: Simplifies repeated evaluation of the same arguments
+- **Fully backwards compatible**: Works with all standard format specifiers (`{:?}`, `{:.2}`, etc.)
+- **Integration wrappers**: Drop-in replacements for `std::io` (e.g. `println!`), [anyhow](https://docs.rs/anyhow/latest/anyhow/), [tracing](https://docs.rs/tracing/latest/tracing/) and [log](https://docs.rs/log/latest/log/).
+
 
 ## Installation
 
@@ -26,12 +49,13 @@ Add `formati` to your `Cargo.toml`:
 formati = "0.1"
 ```
 
+
 ## Usage
 
-### Basic Formatting with `formati!`
+### Basic Formatting
 
 ```rust
-use formati::formati;
+use formati::format;
 
 struct User {
     id: u32,
@@ -40,7 +64,7 @@ struct User {
 
 impl User {
     fn display_name(&self) -> String {
-        formati!("USER-{self.id}")
+        format!("USER-{self.id}")
     }
 }
 
@@ -48,70 +72,172 @@ fn main() {
     let coordinates = (42.5, 73.1);
     let user = User { id: 101, role: String::from("Admin") };
 
-    let s = formati!(
+    let s = format!(
         "Position: ({coordinates.0}, {coordinates.1})\n\
-         User: {user.display_name()} (ID: {user.id}, Role: {user.role})"
+         User: {user.display_name()} (ID: {user.id}, Role: {user.role})",
     );
 
     assert_eq!(
         s,
-        "Position: (42.5, 73.1)\nUser: USER-101 (ID: 101, Role: Admin)"
+        "Position: (42.5, 73.1)\nUser: USER-101 (ID: 101, Role: Admin)",
     );
 }
 ```
 
+
 ### Format Specifiers
 
 ```rust
-use formati::formati;
+use formati::format;
 
 fn main() {
     let coords = (10.12345, 20.67890);
-    let formatted = formati!("Location: ({coords.0:.2}, {coords.1:.2})");
-    // "Location: (10.12, 20.68)"
+    let s = format!("Location: ({coords.0:.2}, {coords.1:.2})");
+
+    assert_eq!(
+        s,
+        "Location: (10.12, 20.68)",
+    );
 }
 ```
 
-### Tracing Integration
 
-`formati`-style versions of `tracing` macros that support dotted notation:
+### `print!` / `println!`
+
+Requires `stdio` feature:
+
+```toml
+[dependencies]
+formati = { version = "0.1", features = ["stdio"] }
+```
+
+```rust
+use formati::{print, println};
+
+fn main() {
+    let point = (5, 10);
+
+    print!("Starting at ({point.0}, {point.1})..."); // prints "Starting at (5, 10)..."
+    println!("Coordinates: ({point.0}, {point.1})"); // prints "Coordinates: (5, 10)\n"
+}
+```
+
+
+## Integration Wrappers
+
+### Anyhow
+
+Requires `anyhow` feature:
+
+
+```toml
+[dependencies]
+formati = { version = "0.1", features = ["anyhow"] }
+```
+
+`formati`-style versions of `anyhow` macros:
+
+```rust
+use formati::{anyhow, bail};
+
+#[derive(Debug)]
+struct User {
+    id: u32,
+    name: String,
+}
+
+fn process(user: &User) -> anyhow::Result<()> {
+    if user.id == 0 {
+        bail!("Cannot process zero-id user {user.name} (ID {user.id})");
+    }
+    Ok(())
+}
+
+fn main() {
+    let user = User { id: 0, name: "Bob".into() };
+
+    if let Err(e) = process(&user) {
+        // Produces: "Cannot process zero-id user Bob (ID 0)"
+        eprintln!("{e}");
+    }
+
+    // Build an error directly
+    let err = anyhow!("Unexpected error for {user.name} with id {user.id}");
+    assert_eq!(err.to_string(), "Unexpected error for Bob with id 0");
+}
+
+```
+
+
+### Log
+
+Requires `log` feature:
+
+(**NOTE**: the `log` feature  *cannot* be enabled together with `tracing`)
+
+```toml
+[dependencies]
+formati = { version = "0.1", features = ["log"] }
+```
+
+
+`formati`-style versions of `log` macros:
+
+```rust
+use formati::{debug, error, info, trace, warn}; // instead of log::{…}
+use log::LevelFilter;
+
+fn main() {
+    simple_logger::init_with_level(LevelFilter::Trace).unwrap();
+
+    let user = ("Alice", 42);
+
+    trace!("Starting auth flow for {user.0} ({user.1})…");
+    debug!("Loaded profile for {user.0}");
+    info!("User {user.0} logged in with ID {user.1}");
+    warn!("Suspicious activity detected for ID {user.1}");
+    error!("Failed to handle request for user {user.0}");
+}
+
+```
+
+
+### Tracing
+
+Requires `tracing` feature:
+
+(**NOTE**: the `tracing` feature  *cannot* be enabled together with `log`)
+
+```toml
+[dependencies]
+formati = { version = "0.1", features = ["tracing"] }
+```
+
+`formati`-style versions of `tracing` macros:
 
 ```rust
 use formati::{debug, error, info, trace}; // use in place of tracing::{debug, error, info, trace}
 use tracing_subscriber::FmtSubscriber;
 
 fn main() {
-    // Set up tracing
     tracing::subscriber::set_global_default(
         FmtSubscriber::builder().finish()
     ).unwrap();
 
     let user = (String::from("Alice"), 101);
 
-    // Use enhanced tracing macros
-    info!("User {user.0} logged in with ID {user.1}");
+    trace!(target: "auth", "Authenticating")
     debug!(user_type = "admin", "Processing request for {user.0}");
-    error!("Failed to process request for user.id = {user.1}");
+    info!("User {user.0} logged in with ID {user.1}");
+    warn!(data = (13, 37), "Bad data from ID {user.1}")
+    error!("Failed to process request for ID = {user.1}");
 }
 ```
 
-### Print and Println Wrappers
-
-```rust
-use formati::{printi, printlni};
-
-fn main() {
-    let point = (5, 10);
-
-    // Use enhanced print macros
-    printi!("Starting at ({point.0}, {point.1})...");
-    printlni!("Coordinates: ({point.0}, {point.1})");
-}
-```
 
 ## How It Works
 
-The `formati` crate processes format strings at compile time to:
+The macros processes format strings at compile time to:
 
 1. Find placeholders with dotted notation (`{example.field}`)
 2. Extract these expressions and deduplicate them
@@ -120,7 +246,10 @@ The `formati` crate processes format strings at compile time to:
 
 This approach avoids evaluating the same expression multiple times and makes your format strings more readable.
 
-### Expansion Demonstration
+
+### Backwards compatibility
+
+The macros are all backwards compatible and can be used as a drop-in replacement.
 
 ```rust
 struct Point {
@@ -130,7 +259,11 @@ struct Point {
 
 let point = Point { x: 3.0, y: 4.0 };
 
-let info = formati!("Point: ({point.x}, {point.y}), X-coord: {point.x}, Y-coord: {point.y}");
+let info = format!(
+    "Point: ({point.x}, {point.y}), X-coord: {point.x}, Y-coord: {point.y}, ({},{})",
+    point.x,
+    point.y,
+);
 ```
 
 The `format!` macro would expand to:
@@ -138,7 +271,7 @@ The `format!` macro would expand to:
 ```rust
 alloc::__export::must_use({
     let res = alloc::fmt::format(alloc::__export::format_args!(
-        "Point: ({0}, {1}), X-coord: {0}, Y-coord: {1}",
+        "Point: ({0}, {1}), X-coord: {0}, Y-coord: {1}, ({0}, {1})",
         point.x,
         point.y
     ));
@@ -146,8 +279,40 @@ alloc::__export::must_use({
 })
 ```
 
+## Tests
+
+Test `formati::format!` macro:
+
+```
+cargo test
+```
+
+Test `stdio` integration:
+
+```
+cargo test-stdio
+```
+
+Test `anyhow` integration:
+
+```
+cargo test-anyhow
+```
+
+
+Test `log` integration:
+
+```
+cargo test-log
+```
+
+Test `tracing` integration:
+
+```
+cargo test-tracing
+```
+
 
 ## License
 
 This project is licensed under the MIT License.
-
