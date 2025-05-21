@@ -1,0 +1,7 @@
+[alias]
+
+test-formati = "test -- test_formati --test-threads=1"
+test-anyhow = "test --features tracing -- test_anyhow --test-threads=1"
+test-log = "test --no-default-features --features log -- test_log --test-threads=1"
+test-stdio = " test --no-default-features --features stdio -- test_stdio --nocapture --quiet --test-threads=1"
+test-tracing = "test --features tracing -- test_tracing --test-threads=1"
