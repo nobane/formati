@@ -124,4 +124,106 @@ mod test_formati {
     );
         assert_eq!(detail_result, "ID: 0157, Salary: +85000, Department: Engin");
     }
+
+    #[test]
+    fn test_formati_dereference() {
+        let ptr = Box::new(42);
+        let result = format!("Value: {*ptr}");
+        assert_eq!(result, "Value: 42");
+    }
+
+    #[test]
+    fn test_formati_type_casting() {
+        let value = 42i32;
+        let result = format!("As u64: {value as u64}");
+        assert_eq!(result, "As u64: 42");
+    }
+
+    #[test]
+    fn test_formati_try_operator() -> Result<(), &'static str> {
+        fn get_result() -> Result<i32, &'static str> {
+            Ok(42)
+        }
+        let _ = format!("Result: {get_result()?.to_string()}");
+        // need to be in a function that returns Result
+        Ok(())
+    }
+
+    #[test]
+    fn test_formati_range_expressions() {
+        let vec = [1, 2, 3, 4, 5];
+        let result = format!("Slice: {vec[1..4].len()}");
+        assert_eq!(result, "Slice: 3");
+    }
+
+    #[test]
+    fn test_formati_arithmetic_expressions() {
+        let a = 5;
+        let b = 3;
+        let result = format!("Sum: {a + b}, Product: {a * b}");
+        assert_eq!(result, "Sum: 8, Product: 15");
+    }
+
+    #[test]
+    fn test_formati_struct_literals() {
+        struct Point {
+            x: i32,
+            y: i32,
+        }
+        impl std::fmt::Debug for Point {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                // format as something different than the standard #[derive(Debug)]
+                f.debug_struct("DebugPoint")
+                    .field("debug_x", &(self.x + 1))
+                    .field("debug_y", &(self.y + 1))
+                    .finish()
+            }
+        }
+
+        let result = format!("Point: {Point { x: 1, y: 2 }:?}");
+        assert_eq!(result, "Point: DebugPoint { debug_x: 2, debug_y: 3 }");
+    }
+
+    #[test]
+    fn test_formati_closure_calls() {
+        let closure = |x: i32| x * 2;
+        let result = format!("Double: {closure(5)}");
+        assert_eq!(result, "Double: 10");
+    }
+
+    #[test]
+    fn test_formati_match_expressions() {
+        let option = Some(42);
+        let result = format!("Value: {match option { Some(x) => x, None => 0 }}");
+        assert_eq!(result, "Value: 42");
+    }
+
+    #[test]
+    fn test_formati_if_expressions() {
+        let condition = true;
+        let result = format!("Value: {if condition { 42 } else { 0 }}");
+        assert_eq!(result, "Value: 42");
+    }
+
+    #[test]
+    fn test_formati_macro_calls() {
+        let result = format!("Vec: {vec![1, 2, 3].len()}");
+        assert_eq!(result, "Vec: 3");
+    }
+
+    #[test]
+    fn test_formati_lifetimes() {
+        fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+            if x.len() > y.len() {
+                x
+            } else {
+                y
+            }
+        }
+
+        let s1 = "hello";
+        let s2 = "world!";
+        let result = format!("Longest: {longest(s1, s2)}");
+        assert_eq!(result, "Longest: world!");
+    }
 }
