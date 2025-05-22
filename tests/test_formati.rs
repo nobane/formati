@@ -17,6 +17,27 @@ mod test_formati {
     }
 
     #[test]
+    fn test_complex_expressions() {
+        // Test ::
+        let result = format!(
+            "Created: {String::from(\"Alice\")}, \
+         Length: {String::from(\"Alice\").len()}, \
+         Uppercase: {String::from(\"Alice\").to_uppercase()}, \
+         Vec: {Vec::<i32>::new().len()}",
+        );
+
+        assert_eq!(
+            result,
+            "Created: Alice, Length: 5, Uppercase: ALICE, Vec: 0",
+        );
+
+        // Test with indexing
+        let numbers = [1, 2, 3];
+        let result2 = format!("Numbers: {numbers.len():04}, First: {numbers[0]:02}");
+        assert_eq!(result2, "Numbers: 0003, First: 01");
+    }
+
+    #[test]
     fn test_formati_formatting_specs() {
         let value = consts::PI;
         let result = format!("Pi: {value:.2}");

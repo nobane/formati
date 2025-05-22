@@ -34,7 +34,7 @@ impl Parse for Input {
         if input.peek(Token![,]) {
             let _: Token![,] = input.parse()?; // eat the comma
 
-            // ① nothing else → it's a lone trailing comma → zero extra args
+            // it's a lone trailing comma
             if input.is_empty() {
                 return Ok(Self {
                     fmt_lit,
@@ -42,8 +42,7 @@ impl Parse for Input {
                 });
             }
 
-            // ② there *is* more input → parse the normal arg list (allows its
-            //    own trailing comma too).
+            // more input, parse the normal arg list
             let rest = Punctuated::<Expr, Token![,]>::parse_terminated(input)?;
             return Ok(Self { fmt_lit, rest });
         }
@@ -59,7 +58,14 @@ pub fn wrap(wrapped: TokenStream2, input: TokenStream) -> TokenStream {
 
     let (out_lit, dot_args) = formati_args(&fmt_lit);
 
-    let (named, positional) = categorize(rest);
+    let mut named = Vec::new();
+    let mut positional = Vec::new();
+    for expr in rest {
+        match expr {
+            x @ Expr::Assign(ExprAssign { .. }) => named.push(x.to_token_stream()),
+            x => positional.push(x.to_token_stream()),
+        }
+    }
 
     let lit = LitStr::new(&out_lit, fmt_lit.span());
 
@@ -73,42 +79,26 @@ pub fn wrap(wrapped: TokenStream2, input: TokenStream) -> TokenStream {
     })
 }
 
-/// Split arguments into named and positional
-fn categorize(args: Punctuated<Expr, Token![,]>) -> (Vec<TokenStream2>, Vec<TokenStream2>) {
-    let mut named = Vec::new();
-    let mut positional = Vec::new();
-    for expr in args {
-        match expr {
-            x @ Expr::Assign(ExprAssign { .. }) => named.push(x.to_token_stream()),
-            x => positional.push(x.to_token_stream()),
-        }
-    }
-    (named, positional)
-}
-
 /// Process a format string, handling dotted/tuple notations
 pub fn formati_args(fmt_lit: &LitStr) -> (String, Vec<proc_macro2::TokenStream>) {
     let src = fmt_lit.value();
     let mut out_lit = String::with_capacity(src.len());
     let mut dot_args = Vec::<proc_macro2::TokenStream>::new();
-    let mut expr_map: HashMap<String, usize> = HashMap::new(); // expression → index
+    let mut expr_map: HashMap<String, usize> = HashMap::new();
 
     let bytes = src.as_bytes();
     let mut i = 0;
 
     while i < bytes.len() {
         match bytes[i] {
-            // escaped '{{'
             b'{' if bytes.get(i + 1) == Some(&b'{') => {
                 out_lit.push_str("{{");
                 i += 2;
             }
-            // escaped '}}'
             b'}' if bytes.get(i + 1) == Some(&b'}') => {
                 out_lit.push_str("}}");
                 i += 2;
             }
-            // start of a real placeholder
             b'{' => {
                 let start_inner = i + 1;
                 let mut j = start_inner;
@@ -123,13 +113,12 @@ pub fn formati_args(fmt_lit: &LitStr) -> (String, Vec<proc_macro2::TokenStream>)
                 }
                 assert!(depth == 0, "format!: unmatched `{{`");
 
-                // j is now *one past* the matching `}`
-                let piece = &src[start_inner..j - 1]; // inside braces
-                i = j; // continue after `}`
+                let piece = &src[start_inner..j - 1];
+                i = j;
 
                 let (head, spec) = split_head_spec(piece);
-                if head.contains('.') {
-                    // dotted/tuple placeholder: de‑duplicate identical expressions
+
+                if should_extract_expression(head) {
                     let expr: Expr = syn::parse_str(head).expect("format!: invalid expression");
                     let key = head.to_string();
 
@@ -143,7 +132,6 @@ pub fn formati_args(fmt_lit: &LitStr) -> (String, Vec<proc_macro2::TokenStream>)
                         }
                     };
 
-                    // replace with indexed `{idx[:spec]}` placeholder
                     out_lit.push('{');
                     out_lit.push_str(&idx.to_string());
                     if !spec.is_empty() {
@@ -152,13 +140,11 @@ pub fn formati_args(fmt_lit: &LitStr) -> (String, Vec<proc_macro2::TokenStream>)
                     }
                     out_lit.push('}');
                 } else {
-                    // keep original placeholder verbatim
                     out_lit.push('{');
                     out_lit.push_str(piece);
                     out_lit.push('}');
                 }
             }
-            // ordinary character
             ch => {
                 out_lit.push(ch as char);
                 i += 1;
@@ -171,14 +157,79 @@ pub fn formati_args(fmt_lit: &LitStr) -> (String, Vec<proc_macro2::TokenStream>)
 
 // split `HEAD[:SPEC]`, ignoring `::` (path separators)
 fn split_head_spec(s: &str) -> (&str, &str) {
-    let mut chars = s.char_indices();
+    let mut chars = s.char_indices().peekable();
+    let mut paren_depth = 0;
+    let mut bracket_depth = 0;
+    let mut angle_depth = 0;
+    let mut in_string = false;
+    let mut escape_next = false;
+
     while let Some((idx, c)) = chars.next() {
-        if c == ':' {
-            // not part of '::'
-            if !matches!(chars.next(), Some((_, ':'))) {
+        if escape_next {
+            escape_next = false;
+            continue;
+        }
+
+        match c {
+            '\\' if in_string => {
+                escape_next = true;
+            }
+            '"' => {
+                in_string = !in_string;
+            }
+            _ if in_string => {
+                // Skip everything inside strings
+                continue;
+            }
+            '(' => {
+                paren_depth += 1;
+            }
+            ')' => {
+                paren_depth -= 1;
+            }
+            '[' => {
+                bracket_depth += 1;
+            }
+            ']' => {
+                bracket_depth -= 1;
+            }
+            '<' => {
+                // Only count as generic if it looks like one (letter/underscore before)
+                if idx > 0 {
+                    let prev_char = s.chars().nth(idx.saturating_sub(1));
+                    if let Some(prev) = prev_char {
+                        if prev.is_alphanumeric() || prev == '_' || prev == '>' {
+                            angle_depth += 1;
+                        }
+                    }
+                }
+            }
+            '>' => {
+                if angle_depth > 0 {
+                    angle_depth -= 1;
+                }
+            }
+            ':' if paren_depth == 0 && bracket_depth == 0 && angle_depth == 0 => {
+                // Check if this is part of '::'
+                if let Some((_, ':')) = chars.peek() {
+                    chars.next(); // consume the second ':'
+                    continue;
+                }
+                // Found a format specifier separator
                 return (&s[..idx], &s[idx + 1..]);
             }
+            _ => {}
         }
     }
+
     (s, "")
+}
+
+fn should_extract_expression(head: &str) -> bool {
+    // Extract if it contains dots, method calls, array indexing, or complex expressions
+    head.contains('.')
+        || head.contains("::")
+        || head.contains('(')
+        || head.contains('[')
+        || head.contains('<')
 }
