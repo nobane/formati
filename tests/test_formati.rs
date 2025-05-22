@@ -144,7 +144,7 @@ mod test_formati {
         fn get_result() -> Result<i32, &'static str> {
             Ok(42)
         }
-        let _ = format!("Result: {get_result()?.to_string()}");
+        let _ = format!("Result: {&get_result()?.to_string()}");
         // need to be in a function that returns Result
         Ok(())
     }
