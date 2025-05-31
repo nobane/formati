@@ -66,6 +66,11 @@ pub fn wrap(kind: &str, input: proc_macro::TokenStream) -> TokenStream {
     let mut named = Vec::<TokenStream2>::new();
     let mut positional = Vec::<TokenStream2>::new();
     for seg in rest {
+        // Skip empty segments (from trailing commas)
+        if seg.is_empty() {
+            continue;
+        }
+
         let expr: Expr = parse2(seg.clone()).expect("invalid expression after template");
         match expr {
             Expr::Assign(ExprAssign { .. }) => named.push(expr.to_token_stream()),

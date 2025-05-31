@@ -5,3 +5,10 @@ test-anyhow = "test --features tracing -- test_anyhow --test-threads=1"
 test-log = "test --no-default-features --features log -- test_log --test-threads=1"
 test-stdio = " test --no-default-features --features stdio -- test_stdio --nocapture --quiet --test-threads=1"
 test-tracing = "test --features tracing -- test_tracing --test-threads=1"
+
+
+example-basic = "run --example basic"
+example-stdio = "run --example stdio --features stdio"
+example-anyhow = "run --example anyhow_integration --features anyhow"
+example-tracing = "run --example tracing_integration --features tracing"
+example-log = "run --example log_integration --features log"
