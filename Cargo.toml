@@ -1,9 +1,9 @@
 [package]
 name = "formati"
-version = "0.1.3"
-edition = "2021"
+version = "0.1.4"
+edition = "2024"
 authors = ["nobane"]
-description = "Enhanced formatting macros with dotted notation and expression interpolation"
+description = "Evaluate dot notation and arbitrary expressions in format! macros"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/nobane/formati"

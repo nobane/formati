@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens as _};
+use quote::{ToTokens as _, quote};
 use syn::{
+    Expr, ExprAssign, LitStr, Token,
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Expr, ExprAssign, LitStr, Token,
 };
 
 /// input: `"literal"` [`,` expr ]*
@@ -52,7 +52,7 @@ impl Parse for Input {
     }
 }
 
-/// Process anyhow-like error macros with dotted notation support
+/// Wrap format!-like macros with formati functionality
 pub fn wrap(wrapped: TokenStream2, input: TokenStream) -> TokenStream {
     let Input { fmt_lit, rest } = parse_macro_input!(input as Input);
 
@@ -79,7 +79,7 @@ pub fn wrap(wrapped: TokenStream2, input: TokenStream) -> TokenStream {
     })
 }
 
-/// Process a format string, handling dotted/tuple notations and complex expressions
+/// Process a format string for dot notation and expressions
 pub fn formati_args(fmt_lit: &LitStr) -> (String, Vec<proc_macro2::TokenStream>) {
     let src = fmt_lit.value();
     let mut out_lit = String::with_capacity(src.len());

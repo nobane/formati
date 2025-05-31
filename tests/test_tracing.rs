@@ -66,8 +66,6 @@ mod test_tracing {
         (writer, guard)
     }
 
-    // Tests
-
     // Full functional test of tracing macros
     #[test]
     fn test_tracing_events() {
@@ -77,7 +75,7 @@ mod test_tracing {
         let username = "test_user";
 
         // Test info! macro with simple values
-        info!("User logged in: {username} with id {user_id}");
+        info!("User logged in: {username} with id {user_id}",);
         let output = writer.captured_output();
         assert!(output.contains("User logged in: test_user with id 42"));
 
@@ -88,6 +86,14 @@ mod test_tracing {
         debug!("Debug info: username={user.0}, id={user.1}");
         let output = writer.captured_output();
         assert!(output.contains("Debug info: username=test_user, id=42"));
+
+        let (writer, _guard) = setup_tracing();
+
+        // Test warn! macro with dotted notation and trailing comma
+        let session = ("session_123", 3600);
+        warn!("Session {session.0} expires in {session.1} seconds",);
+        let output = writer.captured_output();
+        assert!(output.contains("Session session_123 expires in 3600 seconds"));
 
         let (writer, _guard) = setup_tracing();
 

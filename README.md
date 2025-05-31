@@ -1,6 +1,6 @@
 # formati
 
-> **Enhanced Rust formatting macros with dotted notation and expression interpolation**
+> **Evaluate dot notation and arbitrary expressions in Rust format! macros**
 
 [![Crates.io][crates-badge]][crates-url]
 [![MIT licensed][mit-badge]][mit-url]
@@ -10,11 +10,20 @@
 [mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [mit-url]: https://github.com/nobane/formati/blob/master/LICENSE
 
-`formati` is a collection of procedural macros that extend Rust's standard formatting facilities to handle dotted notation:
+Normally, in Rust's format macros, dotted notation or arbitrary expressions must be placed after the format string:
 
-```rs
-formati::format!("User ID: {user.id}  Name: {user.display_name()}");
+```rust
+format!("User ID #{}: {:?}", user.id, user.display_name());
 ```
+
+Using `formati::format!` extends Rust's standard formatting to handle arbitrary expressions (dot notation, function calls, etc.) directly within the format string:
+
+```rust
+use formati::format;
+
+format!("User ID #{user.id}: {user.display_name():?}");
+```
+
 
 - [Features](#features)
 - [Installation](#installation)
@@ -27,6 +36,7 @@ formati::format!("User ID: {user.id}  Name: {user.display_name()}");
   - [Log](#log)
   - [Tracing](#tracing)
 - [How It Works](#how-it-works)
+- [What's the catch?](#whats-the-catch)
 - [Tests](#tests)
 - [License](#license)
 
@@ -278,6 +288,19 @@ alloc::__export::must_use({
     res
 })
 ```
+
+## What's the catch?
+
+While `formati` makes format strings more readable and convenient at no extra runtime cost, there are some trade-offs to be aware of:
+
+**IDE/Editor Limitations**: Most code editors and IDEs don't recognize variables and expressions inside format string literals. This will likely mean:
+- **No syntax highlighting** for the expressions within `{}`
+- **No autocomplete** for field names or method calls
+- **Refactoring tools most likely won't work** - if you rename a variable or field, the IDE won't automatically update references inside format strings
+- **"Find usages"** and similar navigation features may miss references inside format strings
+
+
+
 
 ## Tests
 

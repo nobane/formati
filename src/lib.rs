@@ -6,10 +6,10 @@ use formati_args::wrap;
 
 /// # format
 ///
-/// Format strings with enhanced dotted notation and expression deduplication.
+/// Format strings with enhanced dot notation and arbitrary expression support.
 ///
 /// This macro extends Rust's standard `format!` macro with two key features:
-/// - Automatic handling of dotted notation for struct fields, tuple elements, and method calls
+/// - Automatic handling of dot notation and arbitrary expressions for struct fields, tuple elements, method calls, and more
 /// - Deduplication of identical expressions that appear multiple times in the format string
 ///
 /// ## Example
@@ -53,7 +53,7 @@ use formati_args::wrap;
 ///
 /// ## How It Works
 ///
-/// The macro processes the format string at compile time, extracting dotted expressions,
+/// The macro processes the format string at compile time, extracting dot notation and arbitrary expressions,
 /// deduplicating them, and transforming the format string to use standard formatting syntax.
 /// This avoids evaluating repeated expressions multiple times at runtime.
 #[proc_macro]
@@ -62,6 +62,28 @@ pub fn format(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
+/// Enhanced version of print! with dot notation and arbitrary expression support
+///
+/// This macro wraps the standard print! macro with support for
+/// dot notation and arbitrary expressions with automatic expression deduplication.
+///
+/// # Example
+///
+/// ```
+/// use formati::print;
+///
+/// struct User {
+///     id: u32,
+///     name: String,
+/// }
+///
+/// let user = User {
+///    id: 42,
+///    name: String::from("Alice"),
+/// };
+///
+/// print!("User {user.name} with ID {user.id}");
+/// ```
 #[proc_macro]
 #[cfg(feature = "stdio")]
 pub fn print(input: TokenStream) -> TokenStream {
@@ -69,6 +91,28 @@ pub fn print(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
+/// Enhanced version of println! with dot notation and arbitrary expression support
+///
+/// This macro wraps the standard println! macro with support for
+/// dot notation and arbitrary expressions with automatic expression deduplication.
+///
+/// # Example
+///
+/// ```
+/// use formati::println;
+///
+/// struct User {
+///     id: u32,
+///     name: String,
+/// }
+///
+/// let user = User {
+///    id: 42,
+///    name: String::from("Alice"),
+/// };
+///
+/// println!("User {user.name} with ID {user.id}");
+/// ```
 #[proc_macro]
 #[cfg(feature = "stdio")]
 pub fn println(input: TokenStream) -> TokenStream {
@@ -76,6 +120,28 @@ pub fn println(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
+/// Enhanced version of eprint! with dot notation and arbitrary expression support
+///
+/// This macro wraps the standard eprint! macro with support for
+/// dot notation and arbitrary expressions with automatic expression deduplication.
+///
+/// # Example
+///
+/// ```
+/// use formati::eprint;
+///
+/// struct User {
+///     id: u32,
+///     name: String,
+/// }
+///
+/// let user = User {
+///    id: 42,
+///    name: String::from("Alice"),
+/// };
+///
+/// eprint!("Error: Failed to process user {user.name} with ID {user.id}");
+/// ```
 #[proc_macro]
 #[cfg(feature = "stdio")]
 pub fn eprint(input: TokenStream) -> TokenStream {
@@ -83,6 +149,28 @@ pub fn eprint(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
+/// Enhanced version of eprintln! with dot notation and arbitrary expression support
+///
+/// This macro wraps the standard eprintln! macro with support for
+/// dot notation and arbitrary expressions with automatic expression deduplication.
+///
+/// # Example
+///
+/// ```
+/// use formati::eprintln;
+///
+/// struct User {
+///     id: u32,
+///     name: String,
+/// }
+///
+/// let user = User {
+///    id: 42,
+///    name: String::from("Alice"),
+/// };
+///
+/// eprintln!("Error: Failed to process user {user.name} with ID {user.id}");
+/// ```
 #[proc_macro]
 #[cfg(feature = "stdio")]
 pub fn eprintln(input: TokenStream) -> TokenStream {
@@ -90,6 +178,28 @@ pub fn eprintln(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
+/// Enhanced version of dbg! with dot notation and arbitrary expression support
+///
+/// This macro wraps the standard dbg! macro with support for
+/// dot notation and arbitrary expressions with automatic expression deduplication.
+///
+/// # Example
+///
+/// ```
+/// use formati::dbg;
+///
+/// struct User {
+///     id: u32,
+///     name: String,
+/// }
+///
+/// let user = User {
+///    id: 42,
+///    name: String::from("Alice"),
+/// };
+///
+/// dbg!("Debug: user {user.name} with ID {user.id}");
+/// ```
 #[proc_macro]
 #[cfg(feature = "stdio")]
 pub fn dbg(input: TokenStream) -> TokenStream {
@@ -97,6 +207,28 @@ pub fn dbg(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
+/// Enhanced version of panic! with dot notation and arbitrary expression support
+///
+/// This macro wraps the standard panic! macro with support for
+/// dot notation and arbitrary expressions with automatic expression deduplication.
+///
+/// # Example
+///
+/// ```
+/// use formati::panic;
+///
+/// struct User {
+///     id: u32,
+///     name: String,
+/// }
+///
+/// let user = User {
+///    id: 42,
+///    name: String::from("Alice"),
+/// };
+///
+/// panic!("Critical error: user {user.name} with ID {user.id}");
+/// ```
 #[proc_macro]
 #[cfg(feature = "stdio")]
 pub fn panic(input: TokenStream) -> TokenStream {
@@ -104,10 +236,10 @@ pub fn panic(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
-/// Enhanced version of anyhow! with dotted notation support
+/// Enhanced version of anyhow! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard anyhow! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
@@ -133,10 +265,10 @@ pub fn anyhow(input: TokenStream) -> TokenStream {
     wrap(wrapped, input)
 }
 
-/// Enhanced version of bail! with dotted notation support
+/// Enhanced version of bail! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard bail! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
@@ -166,10 +298,10 @@ pub fn bail(input: TokenStream) -> TokenStream {
 #[cfg(feature = "tracing")]
 mod like_tracing;
 
-/// Enhanced version of trace! with dotted notation support
+/// Enhanced version of trace! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard trace! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
@@ -186,7 +318,7 @@ mod like_tracing;
 ///    name: String::from("Alice"),
 /// };
 ///
-/// trace!("Trace: entering function with user={user.name}, id={user.id}");
+/// trace!("Entering function with user {user.name} and ID {user.id}");
 /// ```
 #[proc_macro]
 #[cfg(any(feature = "log", feature = "tracing"))]
@@ -201,10 +333,11 @@ pub fn trace(input: TokenStream) -> TokenStream {
         like_tracing::wrap("trace", input)
     }
 }
-/// Enhanced version of debug! with dotted notation support
+
+/// Enhanced version of debug! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard debug! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
@@ -221,7 +354,7 @@ pub fn trace(input: TokenStream) -> TokenStream {
 ///    name: String::from("Alice"),
 /// };
 ///
-/// debug!("Debug: user object state: name={user.name}, id={user.id}");
+/// debug!("Debug user object state: name={user.name}, id={user.id}");
 /// ```
 #[proc_macro]
 #[cfg(any(feature = "log", feature = "tracing"))]
@@ -237,10 +370,10 @@ pub fn debug(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Enhanced version of info! with dotted notation support
+/// Enhanced version of info! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard info! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
@@ -272,10 +405,11 @@ pub fn info(input: TokenStream) -> TokenStream {
         like_tracing::wrap("info", input)
     }
 }
-/// Enhanced version of warn! with dotted notation support
+
+/// Enhanced version of warn! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard warn! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
@@ -292,7 +426,7 @@ pub fn info(input: TokenStream) -> TokenStream {
 ///    name: String::from("Alice"),
 /// };
 ///
-/// warn!("warn: user {user.name} has suspicious activity");
+/// warn!("Warning: user {user.name} has suspicious activity");
 /// ```
 #[proc_macro]
 #[cfg(any(feature = "log", feature = "tracing"))]
@@ -308,10 +442,10 @@ pub fn warn(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Enhanced version of error! with dotted notation support
+/// Enhanced version of error! with dot notation and arbitrary expression support
 ///
 /// This macro wraps the standard error! macro with support for
-/// dotted notation access to struct fields and automatic expression deduplication.
+/// dot notation and arbitrary expressions with automatic expression deduplication.
 ///
 /// # Example
 ///
